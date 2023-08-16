@@ -1,0 +1,45 @@
+#! PerWorldInventory
+
+
+options:
+    blockedWorlds: "ul_city1" # these worlds will not have their own inventory (but your inv will still gets deleted when you enter it)
+
+function invSave(p: player, world: world):
+    set {_pU} to uuid of {_p}
+    loop integers between 0 and 39:
+        slot loop-value of {_p}'s inventory is set
+        set {PWI::data::%{_pU}%::%{_world}%::items::%loop-value%} to slot loop-value of {_p}'s inventory
+    loop integers between 0 and 39:
+        slot loop-value of {_p}'s ender chest is set
+        set {PWI::data::%{_pU}%::%{_world}%::ec-items::%loop-value%} to slot loop-value of {_p}'s ender chest
+    #broadcast "saved %{_world}%"
+
+function invLoad(p: player, world: world):
+    set {_pU} to uuid of {_p}
+    clear {_p}'s inventory
+    clear {_p}'s ender chest
+    {_world} != {@blockedWorlds}
+    loop integers between 0 and 39:
+        set slot loop-value of {_p}'s inventory to {PWI::data::%{_pU}%::%{_world}%::items::%loop-value%}
+    loop integers between 0 and 39:
+        set slot loop-value of {_p}'s ender chest to {PWI::data::%{_pU}%::%{_world}%::ec-items::%loop-value%}
+    heal {_p}
+    feed {_p}
+    extinguish {_p}
+    set gamemode of {_p} to adventure
+    #broadcast "loaded %{_world}%"
+
+on teleport:
+    set {_oldWorld} to world of player
+    wait a tick
+    set {_newWorld} to world of player
+    {_oldWorld} != {_newWorld}
+    invSave(player, {_oldWorld})
+    wait a tick
+    invLoad(player, {_newWorld})
+
+on quit:
+    invSave(player, (player's world))
+
+on respawn:
+    set respawn location to spawn point of player's world
